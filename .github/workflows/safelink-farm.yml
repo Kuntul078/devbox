@@ -27,6 +27,8 @@ on:
         default: "1"
   schedule:
     - cron: "*/15 * * * *"   # 4x/jam — jauh lebih andal dari */5
+    # 11 shard x 4 fire = 44 view/jam. 1 job ~2,5 menit, jadi 11 < limit 20 concurrent.
+    # Kalau fire tertunda dan menumpuk, job berlebih cuma masuk antrean (aman).
 
 jobs:
   view:
@@ -35,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]        # 4 runner paralel = 4 view per fire
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]   # 11 runner = semua 11 link muter tiap fire
     steps:
       - uses: actions/checkout@v4
 
