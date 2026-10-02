@@ -59,7 +59,7 @@ jobs:
       - name: ambil paket safelink-bot
         run: |
           tar xzf safelink-bot.tar.gz
-          ls safelink-bot | head -5
+          ls links.txt && wc -l links.txt
 
       - name: tulis kredensial proxy dari secret
         env:
@@ -70,7 +70,7 @@ jobs:
           echo "proxies.txt: $(wc -l < safelink-bot/proxies.txt) baris (isi TIDAK di-print)"
 
       - name: view (shard ${{ matrix.shard }})
-        working-directory: safelink-bot
+        # working-directory: safelink-bot  <- pindah ke root
         env:
           DISPLAY: ":99"
         run: |
