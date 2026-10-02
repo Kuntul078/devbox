@@ -85,11 +85,17 @@ jobs:
           echo "shard ${{ matrix.shard }} | target: $LINK"
           # Multi-view loop (default 1, dari input workflow_dispatch)
           VIEWS="${{ github.event.inputs.views || '1' }}"
+          : > /tmp/view.log            # buat file kosong dulu: kalau engine gagal start,
+                                       # step ringkasan tetap bisa grep tanpa error.
           for v in $(seq 1 $VIEWS); do
             echo "--- view $v/$VIEWS ---"
             timeout 900 python3 bypass_engine.py "$LINK" >> /tmp/view.log 2>&1
           done
           EXIT=$?
+          [ -s /tmp/view.log ] || echo "PERINGATAN: view.log kosong (engine tidak start)" >&2
+          # Satu view gagal (proxy mati/timeout) TIDAK boleh membuat job merah — shard
+          # lain dan fire berikutnya harus tetap jalan. Hasilnya sudah dicatat di summary.
+          true
           # Ekstrak hasil dari log
           FINAL=$(grep -aPo '"final": "\K[^"]+' /tmp/view.log | tail -1)
           OK=$(grep -aPo '"ok": \K\w+' /tmp/view.log | tail -1)
