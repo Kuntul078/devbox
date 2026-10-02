@@ -26,9 +26,13 @@ on:
         required: false
         default: "1"
   schedule:
-    - cron: "*/15 * * * *"   # 4x/jam — jauh lebih andal dari */5
-    # 11 shard x 4 fire = 44 view/jam. 1 job ~2,5 menit, jadi 11 < limit 20 concurrent.
-    # Kalau fire tertunda dan menumpuk, job berlebih cuma masuk antrean (aman).
+    # Dua jadwal bergeser, bukan satu jadwal padat — */5 terukur TIDAK andal di GitHub.
+    # Masing-masing tetap pola */15 (andal), digeser 8 menit: total 8 fire/jam.
+    - cron: "*/15 * * * *"        # menit 0,15,30,45
+    - cron: "8,23,38,53 * * * *"  # menit 8,23,38,53  -> jeda ~7-8 menit antar fire
+    # Hitungan: 20 shard x 8 fire = 160 view/jam.
+    # 1 job ~2,5 menit, jadi 20 job selesai sebelum fire berikutnya -> tidak menumpuk.
+    # 20 job = batas concurrent free plan, tepat di langit-langit (bukan lewat).
 
 jobs:
   view:
@@ -37,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]   # 11 runner = semua 11 link muter tiap fire
+        shard: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]  # 20 = batas concurrent free plan
     steps:
       - uses: actions/checkout@v4
 
