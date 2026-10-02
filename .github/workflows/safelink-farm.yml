@@ -58,19 +58,17 @@ jobs:
 
       - name: ambil paket safelink-bot
         run: |
-          tar xzf safelink-bot.tar.gz
+          tar xzf safelink-bot.tar.gz --strip-components=1
           ls links.txt && wc -l links.txt
 
       - name: tulis kredensial proxy dari secret
         env:
           PROXIES_B64: ${{ secrets.PROXIES_B64 }}
         run: |
-          mkdir -p safelink-bot
-          printf '%s' "$PROXIES_B64" | base64 -d > safelink-bot/proxies.txt
-          echo "proxies.txt: $(wc -l < safelink-bot/proxies.txt) baris (isi TIDAK di-print)"
+          printf '%s' "$PROXIES_B64" | base64 -d > proxies.txt
+          echo "proxies.txt: $(wc -l < proxies.txt) baris (isi TIDAK di-print)"
 
       - name: view (shard ${{ matrix.shard }})
-        # working-directory: safelink-bot  <- pindah ke root
         env:
           DISPLAY: ":99"
         run: |
