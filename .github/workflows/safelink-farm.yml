@@ -24,11 +24,7 @@ on:
         description: "jumlah view per job"
         default: "3"
   schedule:
-    - cron: "*/20 * * * *"   # tiap 20 menit
-
-concurrency:
-  group: safelink-farm
-  cancel-in-progress: false
+    - cron: "*/5 * * * *"    # tiap 5 menit (12x/jam)
 
 jobs:
   view:
