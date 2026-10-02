@@ -69,7 +69,12 @@ jobs:
           LINK="${{ github.event.inputs.link }}"
           if [ -z "$LINK" ]; then LINK=$(head -1 links.txt); fi
           echo "target: $LINK"
-          timeout 900 python3 bypass_engine.py "$LINK" 2>&1 | tail -25
+          timeout 900 python3 bypass_engine.py "$LINK" > /tmp/view.log 2>&1
+          echo "EXIT=$?"
+          echo "==== HASIL ===="
+          grep -aE "ok=|final=|clicks|klik|MEDIAFIRE|mediafire|Traceback|Error|attempt" /tmp/view.log | tail -20
+          echo "==== EKOR LOG ===="
+          tail -6 /tmp/view.log
 
       - name: laporan
         if: always()
