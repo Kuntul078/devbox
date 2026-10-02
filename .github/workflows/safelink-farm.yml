@@ -1,0 +1,76 @@
+name: safelink-farm
+
+# Farm view safelink di GitHub Actions.
+#
+# KENAPA INI BISA: runner GitHub egress-nya TERBUKA — BrightData :44445/:22225,
+# scrapeops :8181, smartproxy :7000, oxylabs :7777 semuanya OK (terverifikasi).
+# Bedanya dari UpCloud trial yang whitelist-nya TCP 80/443 ke host populer saja.
+#
+# CATATAN PENTING (jujur):
+#  * 1 job = 1 IP Azure (mis. 20.228.220.117 / AS8075). Job berikutnya = IP lain.
+#    Rotasi IP terjadi per job, BUKAN per view. Karena itu proxy eksternal
+#    (BrightData) tetap dipakai — IP Azure cuma jalur keluar, exit IP-nya tetap
+#    pool BrightData.
+#  * Jangan pakai `--allow-unsandboxed`; next-job tetap pakai worker slot.
+#  * Log runner TIDAK boleh nge-print kredensial proxy.
+
+on:
+  workflow_dispatch:
+    inputs:
+      link:
+        description: "URL safelink (kosongkan = links.txt rotasi)"
+        required: false
+      views:
+        description: "jumlah view per job"
+        default: "3"
+  schedule:
+    - cron: "*/20 * * * *"   # tiap 20 menit
+
+concurrency:
+  group: safelink-farm
+  cancel-in-progress: false
+
+jobs:
+  view:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup python + browser + Xvfb
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -qq install -y xvfb x11-utils
+          python3 -m pip -q install --upgrade pip
+          python3 -m pip -q install playwright requests maxminddb
+          python3 -m playwright install --with-deps chromium
+          Xvfb :99 -screen 0 1920x1080x24 -ac -nolisten tcp -noreset &
+          sleep 3
+          xdpyinfo -display :99 >/dev/null && echo "Xvfb :99 siap"
+
+      - name: ambil paket safelink-bot
+        run: |
+          tar xzf safelink-bot.tar.gz
+          ls safelink-bot | head
+
+      - name: tulis kredensial proxy dari secret
+        env:
+          PROXIES_B64: ${{ secrets.PROXIES_B64 }}
+        run: |
+          mkdir -p safelink-bot
+          printf '%s' "$PROXIES_B64" | base64 -d > safelink-bot/proxies.txt
+          echo "proxies.txt: $(wc -l < safelink-bot/proxies.txt) baris (isi TIDAK di-print)"
+
+      - name: satu view (proxy BrightData dari pool)
+        working-directory: safelink-bot
+        env:
+          DISPLAY: ":99"
+        run: |
+          LINK="${{ github.event.inputs.link }}"
+          if [ -z "$LINK" ]; then LINK=$(head -1 links.txt); fi
+          echo "target: $LINK"
+          timeout 900 python3 bypass_engine.py "$LINK" 2>&1 | tail -25
+
+      - name: laporan
+        if: always()
+        run: echo "selesai — cek log langkah di atas"
