@@ -72,9 +72,15 @@ jobs:
         run: |
           LINK="${{ github.event.inputs.link }}"
           if [ -z "$LINK" ]; then
-            N=$(wc -l < links.txt)
-            IDX=$(( ( ${{ matrix.shard }} - 1 ) % N + 1 ))
+            N=$(grep -c . links.txt)
+            PER=20                                    # view per fire = jumlah shard
+            BATCHES=$(( (N + PER - 1) / PER ))        # jumlah batch link
+            # Batch berganti tiap 20 menit — sejalan dgn cron */20 di CF Worker.
+            # Tanpa ini, shard 1..20 selalu ambil link 1..20 dan link ke-21+ tak pernah kena.
+            BATCH=$(( ($(date +%s) / 1200) % BATCHES ))
+            IDX=$(( (BATCH * PER + ${{ matrix.shard }} - 1) % N + 1 ))
             LINK=$(sed -n "${IDX}p" links.txt)
+            echo "batch $((BATCH+1))/$BATCHES | idx $IDX/$N | shard ${{ matrix.shard }}"
           fi
           echo "shard ${{ matrix.shard }} | target: $LINK"
           # Multi-view loop (default 1, dari input workflow_dispatch)
