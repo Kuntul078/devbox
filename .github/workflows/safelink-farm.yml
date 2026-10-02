@@ -27,15 +27,6 @@ on:
         description: "jumlah view per job (default: 1)"
         required: false
         default: "1"
-  schedule:
-    # Dua jadwal bergeser — satu jadwal padat (mis. */5) terukur TIDAK andal di GitHub.
-    # Masing-masing tetap pola */15 (andal), digeser 8 menit: total 8 fire/jam.
-    - cron: "*/15 * * * *"        # menit 0,15,30,45
-    - cron: "8,23,38,53 * * * *"  # menit 8,23,38,53  -> jeda ~7-8 menit antar fire
-    # Hitungan: 20 shard x 8 fire = 160 view/jam.
-    # 1 job ~2,5 menit, jadi 20 job selesai sebelum fire berikutnya -> tidak menumpuk.
-    # 20 job = batas concurrent free plan, tepat di langit-langit (bukan lewat).
-
 jobs:
   view:
     runs-on: ubuntu-latest
